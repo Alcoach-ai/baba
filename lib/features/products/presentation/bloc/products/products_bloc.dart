@@ -20,6 +20,8 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
   final DeleteProductUseCase deleteProductUseCase;
   final GetTotalUnPaidUseCase getTotalUnPaidUseCase;
 
+  String? currentUserId;
+
   ProductsBloc(
       {required this.getAllProductsUseCase,
       required this.addProductUseCase,
@@ -29,32 +31,35 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
       : super(ProductsInitial()) {
     on<ProductsEvent>((event, emit) async {
       if (event is GetAllProductsEvent) {
+        currentUserId = event.userId;
         loadUsers(event.userId);
       } else if (event is RefreshProductsEvent) {
+        currentUserId = event.userId;
         loadUsers(event.userId);
       } else if (event is AddProductEvent) {
         emit(LoadingProductsState());
         final productsOrFailure = await addProductUseCase(event.product);
-        emit(_eitherDoneOrErrorState(productsOrFailure, "Added"));
+        emit(_eitherDoneOrErrorState(productsOrFailure, "تمت الاضافة"));
         loadUsers(event.product.user_id);
       } else if (event is UpdateProductEvent) {
         emit(LoadingProductsState());
         final productsOrFailure = await updateProductUseCase(event.product);
-        emit(_eitherDoneOrErrorState(productsOrFailure, "Updated"));
+        emit(_eitherDoneOrErrorState(productsOrFailure, "تم التعديل"));
         loadUsers(event.product.user_id);
       } else if (event is DeleteProductEvent) {
         emit(LoadingProductsState());
         final doneOrFailure = await deleteProductUseCase(event.productId);
-        emit(_eitherDoneOrErrorState(doneOrFailure, "Deleted"));
+        emit(_eitherDoneOrErrorState(doneOrFailure, "تم الحذف"));
         loadUsers(event.user_id);
       }
     });
   }
 
-  Future<void> loadUsers(int? id) async {
+  Future<void> loadUsers(String? id) async {
     emit(LoadingProductsState());
     final productsOrFailure = await getAllProductsUseCase(id!);
     final totalOrFailure = await getTotalUnPaidUseCase(id);
+
     totalOrFailure.fold((failure) {
       emit(ErrorProductsState(message: _convertFailureToMessage(failure)));
     }, (total) {

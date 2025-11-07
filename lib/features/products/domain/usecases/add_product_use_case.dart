@@ -9,6 +9,6 @@ class AddProductUseCase {
   AddProductUseCase(this.productRepository);
 
   Future<Either<Failure, Unit>> call(Product product) async {
-    return await productRepository.addProduct(product);
+    return await productRepository.addProduct(product, true);
   }
 }

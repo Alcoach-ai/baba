@@ -7,7 +7,7 @@ class DeleteUserUseCase {
 
   DeleteUserUseCase(this.userRepository);
 
-  Future<Either<Failure, Unit>> call(int userId) async {
-    return await userRepository.deleteUser(userId);
+  Future<Either<Failure, Unit>> call(String userId) async {
+    return await userRepository.deleteUser(userId, true);
   }
 }

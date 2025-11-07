@@ -31,14 +31,18 @@ class _ProductsPageState extends State<ProductsPage> {
       },
       builder: (context, state) {
         return Scaffold(
-            appBar: MainAppBar(
-              appBar: AppBar(),
-              title: (state is LoadedProductsState)
-                  ? state.total.toString()
-                  : widget.user.name,
-            ),
-            body: _buildBody(context, state),
-            floatingActionButton: _buildFloatingActionButton());
+          appBar: MainAppBar(
+            appBar: AppBar(),
+            total:
+                (state is LoadedProductsState) ? state.total.toString() : '0',
+            title: widget.user.name,
+            // showAddEdit: showAddEdit,
+          ),
+          body: _buildBody(context, state),
+          floatingActionButton: _buildFloatingActionButton(),
+          floatingActionButtonLocation:
+              FloatingActionButtonLocation.centerFloat,
+        );
       },
     );
   }
@@ -47,10 +51,7 @@ class _ProductsPageState extends State<ProductsPage> {
     if (state is LoadingProductsState) {
       return LoadingWidget();
     } else if (state is LoadedProductsState) {
-      return RefreshIndicator(
-          child:
-              ProductsListWidget(products: state.products, total: state.total),
-          onRefresh: () => _onRefresh(context));
+      return ProductsListWidget(products: state.products, total: state.total);
     } else if (state is ErrorProductsState) {
       return MessageWidget(message: state.message);
     }
@@ -68,6 +69,14 @@ class _ProductsPageState extends State<ProductsPage> {
       },
       backgroundColor: Colors.blue,
       child: const Icon(Icons.add),
+    );
+  }
+
+  void showAddEdit() {
+    showDialog(
+      context: context,
+      builder: (context) =>
+          AddEditProductDialogWidget(isUpdate: false, userId: widget.user.id),
     );
   }
 

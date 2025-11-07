@@ -30,18 +30,20 @@ Future<void> init() async {
   // Futures . Posts
 
   // Bloc
-  sl.registerFactory(() => UsersBloc(
+  sl.registerLazySingleton(() => UsersBloc(
       getUsersUseCase: sl(),
       addUserUseCase: sl(),
       deleteUserUseCase: sl(),
       updateUserUseCase: sl()));
 
-  sl.registerFactory(() => ProductsBloc(
+  sl.registerLazySingleton(() => ProductsBloc(
       addProductUseCase: sl(),
       deleteProductUseCase: sl(),
       getAllProductsUseCase: sl(),
       getTotalUnPaidUseCase: sl(),
       updateProductUseCase: sl()));
+
+  //sl.registerLazySingleton<UsersBloc>(() => UsersBloc(sl()));
 
   // Usecases
   sl.registerLazySingleton(() => GetAllUsersUseCase(sl()));
@@ -68,6 +70,9 @@ Future<void> init() async {
   sl.registerLazySingleton<ProductRepository>(() => ProductRepositoryImpl(
       productLocaleDataSource: sl(), productRemoteDataSource: sl()));
 
+  sl.registerLazySingleton<ProductRepositoryImpl>(
+      () => sl<ProductRepository>() as ProductRepositoryImpl);
+
   // Datasources
 
   sl.registerLazySingleton<UserLocaleDataSource>(
@@ -90,8 +95,10 @@ Future<void> init() async {
   sl.registerLazySingleton<NetworkInfo>(
       () => NetworkInfoImpl(connectivity: sl()));
 
-  sl.registerLazySingleton(
-      () => SyncManager(connectivity: sl(), userRepositoryImpl: sl()));
+  sl.registerLazySingleton(() => SyncManager(
+      connectivity: sl(),
+      userRepositoryImpl: sl(),
+      productRepositoryImpl: sl()));
 
   //External
 }

@@ -9,6 +9,6 @@ class UpdateProductUseCase {
   UpdateProductUseCase(this.productRepository);
 
   Future<Either<Failure, Unit>> call(Product product) async {
-    return await productRepository.updateProduct(product);
+    return await productRepository.updateProduct(product, true);
   }
 }

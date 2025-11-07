@@ -8,17 +8,21 @@ class ProductModel extends Product {
       required super.weight,
       required super.price,
       required super.date,
-      required super.user_id});
+      required super.user_id,
+      required super.status,
+      required super.lastupdate});
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
     return ProductModel(
-        id: json['id'],
+        id: json['id'].toString(),
         name: json['name'],
         type: json['type'],
-        weight: json['weight'],
-        price: json['price'],
+        weight: json['weight'].toString(),
+        price: json['price'].toString(),
         date: json['date'],
-        user_id: json['user_id']);
+        user_id: json['user_id'].toString(),
+        status: json['status'].toString(),
+        lastupdate: json['lastupdate']);
   }
 
   Map<String, dynamic> toJson() {
@@ -29,7 +33,9 @@ class ProductModel extends Product {
       'weight': weight,
       'price': price,
       'date': date,
-      'user_id': user_id
+      'user_id': user_id,
+      'status': status,
+      'lastupdate': lastupdate
     };
   }
 }

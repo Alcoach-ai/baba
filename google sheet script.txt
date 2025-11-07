@@ -1,0 +1,77 @@
+function doPost(request) {
+  var thisSheet = SpreadsheetApp.openById('19a-tlXHS4dLaXT8NMVuNUbeH6llqN9b7TG7IQm8EEmQ');
+
+  var status = null;
+
+  try {
+    var id = request.parameter.id;
+    var name = request.parameter.name;
+    var action = request.parameter.action;
+    var lastupdate = request.parameter.lastupdate;
+
+    if (action == "add") {
+      var newRow = thisSheet.getActiveSheet().appendRow([id, name,lastupdate])
+      status = { "status": "SUCCESS", "message": "Data Inserted Successfuly!" };
+
+    } else if (action == "update") {
+      var values = thisSheet.getActiveSheet().getDataRange().getValues();
+
+
+      var found = false;
+      for (var i = 0; i < values.length; i++) {
+        if (String(values[i][0]) === String(id)) { // Assuming unique_id is in column A
+          thisSheet.getRange('B' + (i + 1)).setValue(name);  // Update name (column B)
+          thisSheet.getRange('C' + (i + 1)).setValue(lastupdate);
+          found = true;
+          break;
+        }
+      }
+
+      if (!found) {
+        // If not found, append new row
+        thisSheet.appendRow([id, name,lastupdate]);
+      }
+      status = { "status": "SUCCESS", "message": "Data Updated Successfuly!" };
+    }
+  }
+  catch (exception) {
+    status = { "status": "Error", "message": "Error while inserting data! " + exception };
+  }
+
+  return ContentService
+    .createTextOutput(JSON.stringify(status))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+
+function doGet(request) {
+
+  var sheet = SpreadsheetApp.openById("19a-tlXHS4dLaXT8NMVuNUbeH6llqN9b7TG7IQm8EEmQ");
+
+  // Get all values in active sheet
+  var values = sheet.getActiveSheet().getDataRange().getValues();
+  var data = [];
+
+  // Iterate values in descending order 
+  for (var i = values.length - 1; i >= 0; i--) {
+
+    // Get each row
+    var row = values[i];
+
+    // Create object
+    var feedback = {};
+
+    feedback['id'] = row[0];
+    feedback['name'] = row[1];
+    feedback['lastupdate'] = row[2];
+
+
+    // Push each row object in data
+    data.push(feedback);
+  }
+
+  // Return result
+  return ContentService
+    .createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
+}

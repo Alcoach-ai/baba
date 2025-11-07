@@ -5,9 +5,9 @@ import 'package:dartz/dartz.dart';
 abstract class UserRepository {
   Future<Either<Failure, List<User>>> getAllUsers();
 
-  Future<Either<Failure, Unit>> addUser(User user);
+  Future<Either<Failure, Unit>> addUser(User user, bool isAddRemote);
 
   Future<Either<Failure, Unit>> updateUser(User user, bool isUpdateRemote);
 
-  Future<Either<Failure, Unit>> deleteUser(int id);
+  Future<Either<Failure, Unit>> deleteUser(String id, bool isDeleteRemote);
 }

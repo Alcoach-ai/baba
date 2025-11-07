@@ -21,7 +21,7 @@ class AddUserEvent extends UsersEvent {
 }
 
 class DeleteUserEvent extends UsersEvent {
-  final int userId;
+  final String userId;
 
   const DeleteUserEvent({required this.userId});
 
@@ -36,4 +36,25 @@ class UpdateUserEvent extends UsersEvent {
 
   @override
   List<Object> get props => [user];
+}
+
+class SearchUsersEvent extends UsersEvent {
+  final String query;
+  const SearchUsersEvent(this.query);
+
+  @override
+  List<Object> get props => [query];
+}
+
+enum SortField { name, total, lastUpdate }
+
+enum SortOrder { ascending, descending }
+
+class SortUsersEvent extends UsersEvent {
+  final SortField field;
+  final SortOrder order;
+  const SortUsersEvent(this.field, this.order);
+
+  @override
+  List<Object> get props => [field, order];
 }

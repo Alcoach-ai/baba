@@ -8,7 +8,7 @@ class GetAllProductsUseCase {
 
   GetAllProductsUseCase(this.productRepository);
 
-  Future<Either<Failure, List<Product>>> call(int userId) async {
-    return await productRepository.getAllProducts(userId);
+  Future<Either<Failure, List<Product>>> call(String id) async {
+    return await productRepository.getAllProducts(id);
   }
 }

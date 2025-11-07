@@ -9,6 +9,6 @@ class AddUserUseCase {
   AddUserUseCase(this.userRepository);
 
   Future<Either<Failure, Unit>> call(User user) async {
-    return await userRepository.addUser(user);
+    return await userRepository.addUser(user, true);
   }
 }

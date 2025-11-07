@@ -8,7 +8,7 @@ sealed class ProductsEvent extends Equatable {
 }
 
 class GetAllProductsEvent extends ProductsEvent {
-  final int userId;
+  final String userId;
 
   const GetAllProductsEvent({required this.userId});
 
@@ -17,7 +17,7 @@ class GetAllProductsEvent extends ProductsEvent {
 }
 
 class RefreshProductsEvent extends ProductsEvent {
-  final int userId;
+  final String userId;
 
   const RefreshProductsEvent({required this.userId});
 
@@ -35,8 +35,8 @@ class AddProductEvent extends ProductsEvent {
 }
 
 class DeleteProductEvent extends ProductsEvent {
-  final int productId;
-  final int user_id;
+  final String productId;
+  final String user_id;
 
   const DeleteProductEvent({required this.productId, required this.user_id});
 

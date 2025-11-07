@@ -7,7 +7,7 @@ class GetTotalUnPaidUseCase {
 
   GetTotalUnPaidUseCase(this.productRepository);
 
-  Future<Either<Failure, int>> call(int userId) async {
+  Future<Either<Failure, int>> call(String userId) async {
     return await productRepository.getTotalUnPaid(userId);
   }
 }

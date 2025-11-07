@@ -17,6 +17,13 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
   final AddUserUseCase addUserUseCase;
   final UpdateUserUseCase updateUserUseCase;
   final DeleteUserUseCase deleteUserUseCase;
+
+  List<User> _allUsers = [];
+  List<User> _displayedUsers = [];
+
+  SortField _currentSortField = SortField.lastUpdate;
+  SortOrder _currentSortOrder = SortOrder.descending;
+
   UsersBloc(
       {required this.getUsersUseCase,
       required this.addUserUseCase,
@@ -29,13 +36,35 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
       } else if (event is AddUserEvent) {
         emit(LoadingUsersSate());
         final usersOrFailure = await addUserUseCase(event.user);
-        emit(_eitherDoneOrErrorState(usersOrFailure, "Added"));
+        emit(_eitherDoneOrErrorState(usersOrFailure, "تمت الاضافة"));
         loadUsers();
       } else if (event is UpdateUserEvent) {
         emit(LoadingUsersSate());
         final usersOrFailure = await updateUserUseCase(event.user);
-        emit(_eitherDoneOrErrorState(usersOrFailure, "Updated"));
+        emit(_eitherDoneOrErrorState(usersOrFailure, "تم التعديل"));
         loadUsers();
+      } else if (event is DeleteUserEvent) {
+        emit(LoadingUsersSate());
+        final usersOrFailure = await deleteUserUseCase(event.userId);
+        emit(_eitherDoneOrErrorState(usersOrFailure, "تم الحذف"));
+        loadUsers();
+      } else if (event is SearchUsersEvent) {
+        //emit(LoadingUsersSate());
+        List<User> filtered = _allUsers.where((u) {
+          final lower = event.query.toLowerCase();
+          return u.name.toLowerCase().contains(lower);
+        }).toList();
+        _displayedUsers = filtered;
+        _applySort();
+        emit(LoadedUsersState(users: _displayedUsers));
+      } else if (event is SortUsersEvent) {
+        _currentSortField = event.field;
+        _currentSortOrder = event.order;
+
+        _displayedUsers = List.from(_allUsers);
+        _applySort();
+
+        emit(LoadedUsersState(users: _displayedUsers));
       }
     });
   }
@@ -50,11 +79,15 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
   }
 
   String _convertFailureToMessage(Failure failure) {
+    if (failure is CacheFailure && failure.message != null) {
+      return failure.message!;
+    }
+
     switch (failure.runtimeType) {
       case CacheFailure:
         return CACHE_FAILURE_MESSAGE;
       default:
-        return 'Please Try Again';
+        return 'حدث خطأ، يرجى المحاولة لاحقًا';
     }
   }
 
@@ -64,7 +97,34 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
     usersOrFailure.fold((failure) {
       emit(ErrorUsersState(message: _convertFailureToMessage(failure)));
     }, (users) {
-      emit(LoadedUsersState(users: users));
+      _allUsers = users;
+      _displayedUsers = List.from(_allUsers);
+      _applySort();
+      emit(LoadedUsersState(users: _displayedUsers));
+    });
+  }
+
+  void _applySort() {
+    _displayedUsers.sort((a, b) {
+      int result;
+      switch (_currentSortField) {
+        case SortField.name:
+          result = a.name.compareTo(b.name);
+          break;
+        case SortField.total:
+          final totalA = a.total ?? 0;
+          final totalB = b.total ?? 0;
+          result = totalA.compareTo(totalB);
+          break;
+        case SortField.lastUpdate:
+          final dateA = DateTime.tryParse(a.lastupdate) ??
+              DateTime.fromMillisecondsSinceEpoch(0);
+          final dateB = DateTime.tryParse(b.lastupdate) ??
+              DateTime.fromMillisecondsSinceEpoch(0);
+          result = dateA.compareTo(dateB);
+          break;
+      }
+      return _currentSortOrder == SortOrder.ascending ? result : -result;
     });
   }
 }

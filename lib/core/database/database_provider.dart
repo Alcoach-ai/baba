@@ -12,11 +12,13 @@ import 'package:flutter/cupertino.dart';
 import 'package:sqflite/sqflite.dart';
 import 'dart:convert' as convert;
 
+import 'package:uuid/uuid.dart';
+
 class DatabaseProvider {
   static final _databaseName = "baba.db";
-  static final _databaseVersion = 2;
+  static final _databaseVersion = 3;
 
-  static final table = 'products';
+  static final table = 'baba';
   static final table_customer = 'customer';
 
   static final c_id = 'id';
@@ -31,8 +33,12 @@ class DatabaseProvider {
   static final price = 'price';
   static final Date = 'date';
   static final customer_id = 'user_id';
+  static final customer_status = 'status';
+  static final customer_last_update = 'lastupdate';
 
   List<String> tables = [table, table_customer];
+
+  final uuid = Uuid();
 
   // DatabaseProvider._privateConstructor();
   // static final DatabaseProvider instance =
@@ -54,13 +60,20 @@ class DatabaseProvider {
   Future<Database> initDatabase() async {
     String path = join(await getDatabasesPath(), _databaseName);
 
-    bool exist = await databaseExists(path);
-    if (exist == true) {
-      return await openDatabase(path, version: _databaseVersion);
-    } else {
-      return await openDatabase(path,
-          version: _databaseVersion, onCreate: _onCreate);
-    }
+    return await openDatabase(
+      path,
+      version: _databaseVersion,
+      onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
+    );
+
+    // bool exist = await databaseExists(path);
+    // if (exist == true) {
+    //   return await openDatabase(path, version: _databaseVersion);
+    // } else {
+    //   return await openDatabase(path,
+    //       version: _databaseVersion, onCreate: _onCreate);
+    // }
   }
 
   Future<bool> databaseExists(String path) =>
@@ -70,24 +83,133 @@ class DatabaseProvider {
   Future _onCreate(Database db, int version) async {
     await db.execute('''
           CREATE TABLE $table (
-            $Id INTEGER PRIMARY KEY AUTOINCREMENT,
-            $Name TEXT NOT NULL,
+            $Id TEXT PRIMARY KEY,
+            $Name TEXT,
             $type TEXT,
             $weight TEXT,
             $price TEXT,
             $Date TEXT,
-            $customer_id INTEGER
+            $customer_id TEXT,
+            $customer_status TEXT,
+            $customer_last_update TEXT
           )
           ''');
 
     await db.execute('''
         CREATE TABLE $table_customer (
-          $c_id INTEGER PRIMARY KEY AUTOINCREMENT,
-          $c_name TEXT NOT NULL,
-          $c_status TEXT NOT NULL,
-          $c_last_update TEXT NOT NULL)
+          $c_id TEXT PRIMARY KEY,
+          $c_name TEXT UNIQUE,
+          $c_status TEXT,
+          $c_last_update TEXT)
           ''');
   }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 3) {
+      // Rename old baba table
+      await db.execute('ALTER TABLE $table RENAME TO baba_old');
+
+      // Create new baba table with TEXT id and additional columns
+      await db.execute('''
+      CREATE TABLE $table (
+        $Id TEXT PRIMARY KEY,
+            $Name TEXT,
+            $type TEXT,
+            $weight TEXT,
+            $price TEXT,
+            $Date TEXT,
+            $customer_id TEXT,
+            $customer_status TEXT DEFAULT "1",
+            $customer_last_update TEXT 
+      )
+    ''');
+
+      await db.execute('ALTER TABLE $table_customer RENAME TO customer_old');
+
+      await db.execute('''
+        CREATE TABLE $table_customer (
+          $c_id TEXT PRIMARY KEY,
+          $c_name TEXT UNIQUE ,
+          $c_status TEXT DEFAULT "1",
+          $c_last_update TEXT )
+          ''');
+      // Read old data
+      List<Map<String, dynamic>> oldData = await db.query('baba_old');
+      List<Map<String, dynamic>> oldCustomer = await db.query('customer_old');
+      final now = DateTime.now()
+          .toUtc()
+          .toIso8601String(); // e.g., 2025-08-08T12:52:48.646810Z
+
+      // Insert with new UUIDs
+      for (var row in oldData) {
+        await db.insert(table, {
+          Id: uuid.v4(),
+          Name: row['type'] ?? '',
+          type: row['name'] ?? '',
+          weight: row['weight'] ?? '',
+          price: row['price'] ?? '',
+          Date: row['date'] ?? '',
+          customer_id: row['customer_id'].toString(),
+          customer_last_update: now,
+        });
+      }
+      final Set<String> existingNames = {};
+      for (var row in oldCustomer) {
+        String baseName = row['name']?.toString().trim() ?? '';
+        if (baseName.isEmpty) {
+          baseName = 'بدون اسم';
+        }
+        String name = baseName;
+        int suffix = 1;
+
+        while (
+            existingNames.contains(name) || await _nameExistsInDb(db, name)) {
+          name = '$baseName($suffix)';
+          suffix++;
+        }
+
+        existingNames.add(name);
+
+        await db.insert(table_customer, {
+          c_id: row['id'].toString(),
+          c_name: name,
+          c_last_update: now,
+        });
+      }
+
+      // Drop old table
+      await db.execute('DROP TABLE baba_old');
+      await db.execute('DROP TABLE customer_old');
+
+      // Alter customer table
+      // await db.execute('ALTER TABLE $table ADD COLUMN status TEXT DEFAULT "0"');
+      // await db.execute(
+      //     'ALTER TABLE $table ADD COLUMN lastupdate TEXT DEFAULT CURRENT_TIMESTAMP');
+
+      // await db.execute(
+      //     'ALTER TABLE $table_customer ADD COLUMN status TEXT DEFAULT "0"');
+      // await db.execute(
+      //     'ALTER TABLE $table_customer ADD COLUMN lastupdate TEXT DEFAULT CURRENT_TIMESTAMP');
+    }
+  }
+
+  // Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+  //   if (oldVersion < 2) {
+  //     // Example: add new columns
+  //     await db.execute(
+  //         'ALTER TABLE $table ADD COLUMN $customer_status TEXT DEFAULT "0"');
+  //     await db.execute(
+  //         'ALTER TABLE $table ADD COLUMN $customer_last_update TEXT DEFAULT CURRENT_TIMESTAMP');
+
+  //     await db.execute(
+  //         'ALTER TABLE $table_customer ADD COLUMN $c_status TEXT DEFAULT "0"');
+  //     await db.execute(
+  //         'ALTER TABLE $table_customer ADD COLUMN $c_last_update TEXT DEFAULT CURRENT_TIMESTAMP');
+  //   }
+
+  //   // Future migrations:
+  //   // if (oldVersion < 3) { ... }
+  // }
 
   // Inserts a row in the database where each key in the Map is a column name
   // and the value is the column value. The return value is the id of the
@@ -97,6 +219,15 @@ class DatabaseProvider {
     return await db!.insert(table_customer, {'name': name, 'status': status});
   }
 
+  Future<bool> _nameExistsInDb(Database db, String name) async {
+    final result = await db.query(
+      table_customer,
+      where: '$c_name = ?',
+      whereArgs: [name],
+      limit: 1,
+    );
+    return result.isNotEmpty;
+  }
   // Future<int> insert(baba rem) async {
   //   Database? db = await instance.database;
   //   return await db!.insert(table, {
