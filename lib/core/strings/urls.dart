@@ -1,6 +1,6 @@
 // live google sheet url
 const String _baseServerUrl =
-    "https://script.google.com/macros/s/AKfycbzhSu7rXJHN1A8TDD9NGd2z7Y-OiOOpyS-IQ0NmaMdKN6CEUgvN7a1g5b5Qbwf7XP8R/exec";
+    "";
 
 // old google sheet url
 //const String _baseServerUrl =
